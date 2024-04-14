@@ -17,7 +17,8 @@ urlpatterns = [
     path('membros/<int:pk>', views.MemberRetrieveUpdateDelete.as_view(), name='member_rud'),
     path('membros/importar', views.MembersCSVImport, name='member_import'),
 
-    path('equipas', views.TeamListCreate.as_view()),
+    path('equipas', views.TeamListCreate.as_view(), name='team_list'),
+    path('equipas/importar', views.TeamsCSVImport, name='team_import'),
 
     path('funcoes', views.FunctionListCreate.as_view(), name='function_list'),
     path('funcoes/importar', views.FunctionsCSVImport, name='function_import'),
@@ -35,5 +36,6 @@ urlpatterns = [
     path('atividades/importar', views.ActivitiesCSVImport, name='activity_import'),
 
     path('participantes', views.ParticipantListCreate.as_view(), name='participant_list'),
+    path('participantes/registo', views.ParticipantsRegister, name='participant_register'),
     path('participantes/importar', views.ParticipantsCSVImport, name='participant_import'),
 ]

@@ -2,14 +2,16 @@ from django.contrib.auth.models import User
 from django.shortcuts import redirect
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
+import uuid
 
 from datetime import datetime
 
-from .models import Department, Member, Team, Function, Building, Space, Task, Activity, Participant
+from .models import Department, Member, Team, Function, Building, Space, Task, Activity, Participant, ActivityRegistration
 from .serializers import UserSerializer, DepartmentSerializer, MemberSerializer, TeamSerializer, FunctionSerializer, BuildingSerializer, SpaceSerializer, TaskSerializer, ActivitySerializer, ParticipantSerializer
 
 from .csv.departments import run_csv as RunCSVImportDepartments
 from .csv.members import run_csv as RunCSVImportMembers
+from .csv.teams import run_csv as RunCSVImportTeams
 from .csv.functions import run_csv as RunCSVImportFunctions
 from .csv.buildings import run_csv as RunCSVImportBuildings
 from .csv.spaces import run_csv as RunCSVImportSpaces
@@ -88,6 +90,20 @@ class TeamListCreate(generics.ListCreateAPIView):
     serializer_class = TeamSerializer
     #permission_classes = [IsAuthenticated]
     permission_classes = [AllowAny]
+
+
+def TeamsCSVImport(request):
+    for team in RunCSVImportTeams():
+        try:
+            Team.objects.create(
+                title=team['title'],
+                description=team['description'],
+                coordinator=Member.objects.filter(name=team['coordinator_name'])[0]
+            )
+        except:
+            print('Import went wrong')
+
+    return redirect('team_list')
 
 
 class FunctionListCreate(generics.ListCreateAPIView):
@@ -204,12 +220,12 @@ def ActivitiesCSVImport(request):
             date_num = int(activity['date_num'])
 
             dates = {
-                1: '15/04/2024',
-                2: '16/04/2024',
-                3: '17/04/2024',
-                4: '18/04/2024',
-                5: '19/04/2024'
-            } # dates missing
+                2: '15/04/2024',
+                3: '16/04/2024',
+                4: '17/04/2024',
+                5: '18/04/2024',
+                6: '19/04/2024'
+            }
 
             date = dates[date_num]
             
@@ -233,24 +249,51 @@ class ParticipantListCreate(generics.ListCreateAPIView):
     permission_classes = [AllowAny]
 
 
+def ParticipantsRegister(request):
+    name = request.POST['name'].strip()
+    email = request.POST['email'].strip()
+    internal_id = request.POST['internal_id'].strip()
+    act_title = request.POST['act_title'].strip()
+
+    try:            
+        p = Participant.objects.create(
+            name=name,
+            email=email,
+            internal_id=internal_id
+        )
+
+        act = Activity.objects.filter(title=act_title)[0]
+        ActivityRegistration.objects.create(
+            activity=act,
+            participant=p,
+            pre_registered=False,
+            showed_up=True
+        )   
+        
+    except:
+        print('Register went wrong')
+
+    return redirect('participant_list')
+
+
 def ParticipantsCSVImport(request):
     for participant in RunCSVImportParticipants():
-        try:
-            activities = []
-            activity_titles = participant['activities']
-            
-            for act_title in activity_titles:
-                activities.append(Activity.objects.filter(title=act_title)[0])
-
-            print(activities)
-            
+        try:            
             p = Participant.objects.create(
                 name=participant['name'],
                 email=participant['email'],
-                internal_id=participant['internal_id'], # generate instead of provide
+                internal_id=uuid.uuid4().hex[:7].upper() # unique id
             )
-
-            p.activities.add(*activities)
+            
+            for act_title in participant['activity_titles']:
+                act = Activity.objects.filter(title=act_title)[0]
+                ActivityRegistration.objects.create(
+                    activity=act,
+                    participant=p,
+                    pre_registered=True,
+                    showed_up=False
+                )
+            
         except:
             print('Import went wrong')
 

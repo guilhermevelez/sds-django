@@ -140,16 +140,26 @@ class Activity(models.Model):
         return self.title
 
     def get_participants(self):
-        return self.participant_set.all()
+        participants = []
+        registrations = ActivityRegistration.objects.filter(activity=self)
+
+        for reg in registrations:
+            participants.append(reg.participant)
+
+        return participants
 
 
 class Participant(models.Model):
     name = models.CharField(max_length=30)
     email = models.EmailField(max_length=100)
     internal_id = models.CharField(max_length=30)
-    activities = models.ManyToManyField(Activity)
-    #created_at = models.DateTimeField(auto_now_add=True)
 
-    def get_activities(self):
-        return self.activities.all()
+    def get_act_registrations(self):
+        return ActivityRegistration.objects.filter(participant=self)
 
+
+class ActivityRegistration(models.Model):
+    activity = models.ForeignKey(Activity, on_delete=models.CASCADE)
+    participant = models.ForeignKey(Participant, on_delete=models.CASCADE)
+    pre_registered = models.BooleanField(default=False)
+    showed_up = models.BooleanField(default=False)

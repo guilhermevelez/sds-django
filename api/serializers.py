@@ -160,13 +160,15 @@ class TaskSerializer(serializers.ModelSerializer):
     def get_space_obj(self, task):
         return {
             'id': task.space.id,
-            'name': task.get_space_name()
+            'name': task.get_space_name(),
+            'bulding_name': str(task.building)
         }
     
     def get_member_obj(self, task):
         return {
             'id': task.member.id,
-            'name': str(task.member)
+            'name': str(task.member),
+            'phone': task.member.phone
         }
 
 
@@ -189,6 +191,7 @@ class ActivitySerializer(serializers.ModelSerializer):
         return [{
             'id': p.id,
             'name': p.name,
+            'email': p.email,
             'internal_id': p.internal_id
         } for p in act.get_participants()]
     
@@ -202,9 +205,11 @@ class ParticipantSerializer(serializers.ModelSerializer):
     
     def get_activities(self, participant):
         return [{
-            'id': act.id,
-            'title': act.title,
-            'date': act.date,
-            'hour_start': act.hour_start,
-            'hour_end': act.hour_end
-        } for act in participant.get_activities()]
+            'id': reg.id,
+            'title': reg.activity.title,
+            'date': reg.activity.date,
+            'hour_start': reg.activity.hour_start,
+            'hour_end': reg.activity.hour_end,
+            'pre_registered': reg.pre_registered,
+            'showed_up': reg.showed_up,
+        } for reg in participant.get_act_registrations()]
