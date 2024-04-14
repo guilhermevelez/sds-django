@@ -1,6 +1,6 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import Department, Member, Team, Function, Building, Space, Task, Activity, Participant
+from .models import Department, Member, Team, Function, Building, Space, Task, Activity, Participant, ActivityRegistration
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -213,3 +213,30 @@ class ParticipantSerializer(serializers.ModelSerializer):
             'pre_registered': reg.pre_registered,
             'showed_up': reg.showed_up,
         } for reg in participant.get_act_registrations()]
+    
+
+class ActivityRegistrationSerializer(serializers.ModelSerializer):
+    activity_obj = serializers.SerializerMethodField(read_only=True)
+    participant_obj = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = ActivityRegistration
+        fields = ['id', 'activity', 'activity_obj', 'participant', 'participant_obj', 'pre_registered', 'showed_up']
+        extra_kwargs = {'activity': {'write_only': True}, 'participant': {'write_only': True}}
+    
+    def get_activity_obj(self, reg):
+        return {
+            'id': reg.activity.id,
+            'title': reg.activity.title,
+            'date': reg.activity.date,
+            'hour_start': reg.activity.hour_start,
+            'hour_end': reg.activity.hour_end
+        }
+    
+    def get_participant_obj(self, reg):
+        return {
+            'id': reg.participant.id,
+            'name': reg.participant.name,
+            'email': reg.participant.email,
+            'internal_id': reg.participant.internal_id
+        }

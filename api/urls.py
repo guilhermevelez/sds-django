@@ -36,6 +36,8 @@ urlpatterns = [
     path('atividades/importar', views.ActivitiesCSVImport, name='activity_import'),
 
     path('participantes', views.ParticipantListCreate.as_view(), name='participant_list'),
-    path('participantes/registo', views.ParticipantsRegister, name='participant_register'),
+    #path('participantes/registo', views.ParticipantsRegister, name='participant_register'),
     path('participantes/importar', views.ParticipantsCSVImport, name='participant_import'),
+
+    path('inscricoes', views.ActivityRegistrationListCreate.as_view(), name='activity_registration_list'),
 ]

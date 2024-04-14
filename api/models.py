@@ -154,6 +154,9 @@ class Participant(models.Model):
     email = models.EmailField(max_length=100)
     internal_id = models.CharField(max_length=30)
 
+    def __str__(self):
+        return self.name
+
     def get_act_registrations(self):
         return ActivityRegistration.objects.filter(participant=self)
 

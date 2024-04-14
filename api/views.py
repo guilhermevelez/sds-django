@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 
 from .models import Department, Member, Team, Function, Building, Space, Task, Activity, Participant, ActivityRegistration
-from .serializers import UserSerializer, DepartmentSerializer, MemberSerializer, TeamSerializer, FunctionSerializer, BuildingSerializer, SpaceSerializer, TaskSerializer, ActivitySerializer, ParticipantSerializer
+from .serializers import UserSerializer, DepartmentSerializer, MemberSerializer, TeamSerializer, FunctionSerializer, BuildingSerializer, SpaceSerializer, TaskSerializer, ActivitySerializer, ParticipantSerializer, ActivityRegistrationSerializer
 
 from .csv.departments import run_csv as RunCSVImportDepartments
 from .csv.members import run_csv as RunCSVImportMembers
@@ -248,32 +248,62 @@ class ParticipantListCreate(generics.ListCreateAPIView):
     #permission_classes = [IsAuthenticated]
     permission_classes = [AllowAny]
 
+    def post(self, request):
+        name = request.POST['name'].strip()
+        email = request.POST['email'].strip()
+        internal_id = request.POST['internal_id'].strip()
+        act_title = request.POST['activity_title'].strip()
 
-def ParticipantsRegister(request):
-    name = request.POST['name'].strip()
-    email = request.POST['email'].strip()
-    internal_id = request.POST['internal_id'].strip()
-    act_title = request.POST['activity_title'].strip()
+        try:
+            p = Participant.objects.create(
+                name=name,
+                email=email,
+                internal_id=internal_id
+            )
 
-    try:            
-        p = Participant.objects.create(
-            name=name,
-            email=email,
-            internal_id=internal_id
-        )
+            act = Activity.objects.filter(title=act_title)[0]
+            ActivityRegistration.objects.create(
+                activity=act,
+                participant=p,
+                pre_registered=False,
+                showed_up=True
+            )   
+            
+        except:
+            print('Register went wrong')
 
-        act = Activity.objects.filter(title=act_title)[0]
-        ActivityRegistration.objects.create(
-            activity=act,
-            participant=p,
-            pre_registered=False,
-            showed_up=True
-        )   
-        
-    except:
-        print('Register went wrong')
+        return redirect('participant_list')
 
-    return redirect('participant_list')
+
+"""
+class ParticipantsRegister(generics.APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        name = request.POST['name'].strip()
+        email = request.POST['email'].strip()
+        internal_id = request.POST['internal_id'].strip()
+        act_title = request.POST['activity_title'].strip()
+
+        try:
+            p = Participant.objects.create(
+                name=name,
+                email=email,
+                internal_id=internal_id
+            )
+
+            act = Activity.objects.filter(title=act_title)[0]
+            ActivityRegistration.objects.create(
+                activity=act,
+                participant=p,
+                pre_registered=False,
+                showed_up=True
+            )   
+            
+        except:
+            print('Register went wrong')
+
+        return redirect('participant_list')"""
 
 
 def ParticipantsCSVImport(request):
@@ -298,3 +328,30 @@ def ParticipantsCSVImport(request):
             print('Import went wrong')
 
     return redirect('participant_list')
+
+
+class ActivityRegistrationListCreate(generics.ListCreateAPIView):
+    queryset = ActivityRegistration.objects.all()
+    serializer_class = ActivityRegistrationSerializer
+    #permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        internal_id = request.POST['internal_id'].strip()
+        act_title = request.POST['activity_title'].strip()
+
+        try:
+            p = Participant.objects.filter(internal_id=internal_id)
+            act = Activity.objects.filter(title=act_title)[0]
+            ActivityRegistration.objects.create(
+                activity=act,
+                participant=p,
+                pre_registered=False,
+                showed_up=True
+            )   
+            
+        except:
+            print('Register went wrong')
+
+        return redirect('activity_registration_list')
+
