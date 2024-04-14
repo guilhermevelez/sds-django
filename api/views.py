@@ -19,11 +19,11 @@ from .csv.tasks import run_csv as RunCSVImportTasks
 from .csv.activities import run_csv as RunCSVImportActivities
 from .csv.participants import run_csv as RunCSVImportParticipants
 
-
+"""
 class CreateUserView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [AllowAny]
+    permission_classes = [AllowAny]"""
 
 
 class DepartmentListCreate(generics.ListCreateAPIView):
@@ -253,7 +253,7 @@ def ParticipantsRegister(request):
     name = request.POST['name'].strip()
     email = request.POST['email'].strip()
     internal_id = request.POST['internal_id'].strip()
-    act_title = request.POST['act_title'].strip()
+    act_title = request.POST['activity_title'].strip()
 
     try:            
         p = Participant.objects.create(

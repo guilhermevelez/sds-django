@@ -1,14 +1,14 @@
 from django.contrib import admin
 from django.urls import path, include
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+#from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from . import views
 
-urlpatterns = [
-    path('user/registo', views.CreateUserView.as_view(), name="register"),
+"""path('user/registo', views.CreateUserView.as_view(), name="register"),
     path('token', TokenObtainPairView.as_view(), name="get_token"),
     path('token/refresh', TokenRefreshView.as_view(), name="refresh"),
-    path('api-auth', include('rest_framework.urls')),
+    path('api-auth', include('rest_framework.urls')),"""
 
+urlpatterns = [
     path('departamentos', views.DepartmentListCreate.as_view(), name='department_list'),
     path('departamentos/<int:pk>', views.DepartmentRetrieveUpdateDelete.as_view(), name='department_rud'),
     path('departamentos/importar', views.DepartmentCSVImport, name='department_import'),
