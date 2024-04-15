@@ -174,35 +174,32 @@ class TaskListCreate(generics.ListCreateAPIView):
 
 
 def TasksCSVImport(request):
-    for task in RunCSVImportTasks():
-        try:
-            function = Function.objects.filter(title=task['function_title'])[0]
-            space = Space.objects.filter(name=task['space_name'])[0]
-            member = Member.objects.filter(name=task['member_name'])[0]
+    date_nums = {
+        2: '15/04/2024',
+        3: '16/04/2024',
+        4: '17/04/2024',
+        5: '18/04/2024',
+        6: '19/04/2024'
+    } # dates
 
-            date_num = int(task['date_num'])
+    for dn, date in date_nums.items():
+        for task in RunCSVImportTasks(dn):
+            try:
+                function = Function.objects.filter(title=task['function_title'])[0]
+                space = Space.objects.filter(name=task['space_name'])[0]
+                member = Member.objects.filter(name=task['member_name'])[0]
 
-            dates = {
-                1: '15/04/2024',
-                2: '16/04/2024',
-                3: '17/04/2024',
-                4: '18/04/2024',
-                5: '19/04/2024'
-            } # dates missing
+                Task.objects.create(date=datetime.strptime(date, '%d/%m/%Y').date(),
+                    hour_start=datetime.strptime(task['hour_start'], '%H:%M').time(),
+                    hour_end=datetime.strptime(task['hour_end'], '%H:%M').time(),
+                    function=function,
+                    space=space,
+                    member=member
+                )
+            except:
+                print('Import went wrong')
 
-            date = dates[date_num]
-
-            Task.objects.create(date=datetime.strptime(date, '%d/%m/%Y').date(),
-                hour_start=datetime.strptime(task['hour_start'], '%H:%M').time(),
-                hour_end=datetime.strptime(task['hour_end'], '%H:%M').time(),
-                function=function,
-                space=space,
-                member=member
-            )
-        except:
-            print('Import went wrong')
-
-    return redirect('task_list')
+        return redirect('task_list')
 
 
 class ActivityListCreate(generics.ListCreateAPIView):
@@ -213,20 +210,19 @@ class ActivityListCreate(generics.ListCreateAPIView):
 
 
 def ActivitiesCSVImport(request):
+    dates = {
+        2: '15/04/2024',
+        3: '16/04/2024',
+        4: '17/04/2024',
+        5: '18/04/2024',
+        6: '19/04/2024'
+    }
+
     for activity in RunCSVImportActivities():
         try:
             space = Space.objects.filter(name=activity['space_name'])[0]
 
             date_num = int(activity['date_num'])
-
-            dates = {
-                2: '15/04/2024',
-                3: '16/04/2024',
-                4: '17/04/2024',
-                5: '18/04/2024',
-                6: '19/04/2024'
-            }
-
             date = dates[date_num]
             
             Activity.objects.create(
@@ -242,6 +238,7 @@ def ActivitiesCSVImport(request):
     return redirect('activity_list')
 
 
+# Participant may or may not exist, but hasn't pre-registered
 class ParticipantListCreate(generics.ListCreateAPIView):
     queryset = Participant.objects.all()
     serializer_class = ParticipantSerializer
@@ -255,19 +252,33 @@ class ParticipantListCreate(generics.ListCreateAPIView):
         act_title = request.POST['activity_title'].strip()
 
         try:
+            act = Activity.objects.filter(title=act_title)[0]
+
+            # Don't register the user (already exists)
+            if len(Participant.objects.filter(email=email)) > 0:
+                p = Participant.objects.filter(email=email)[0]
+                
+                ActivityRegistration.objects.create(
+                    activity=act,
+                    participant=p,
+                    pre_registered=False,
+                    showed_up=True
+                )
+
+                return redirect('participant_list')
+
             p = Participant.objects.create(
                 name=name,
                 email=email,
                 internal_id=internal_id
             )
 
-            act = Activity.objects.filter(title=act_title)[0]
             ActivityRegistration.objects.create(
                 activity=act,
                 participant=p,
                 pre_registered=False,
                 showed_up=True
-            )   
+            )
             
         except:
             print('Register went wrong')
@@ -306,30 +317,59 @@ class ParticipantsRegister(generics.APIView):
         return redirect('participant_list')"""
 
 
+# Import Pre-registers by day
 def ParticipantsCSVImport(request):
-    for participant in RunCSVImportParticipants():
-        try:            
-            p = Participant.objects.create(
-                name=participant['name'],
-                email=participant['email'],
-                internal_id=uuid.uuid4().hex[:7].upper() # unique id
-            )
-            
-            for act_title in participant['activity_titles']:
-                act = Activity.objects.filter(title=act_title)[0]
-                ActivityRegistration.objects.create(
-                    activity=act,
-                    participant=p,
-                    pre_registered=True,
-                    showed_up=False
+    date_nums = {
+        2: '15/04/2024',
+        3: '16/04/2024',
+        4: '17/04/2024',
+        5: '18/04/2024',
+        6: '19/04/2024'
+    } # dates
+
+    for dn, date in date_nums.items():    
+        for participant in RunCSVImportParticipants(dn):
+            name=participant['name']
+            email=participant['email']
+
+            try:
+                # Don't register the user (already exists)
+                if len(Participant.objects.filter(email=email)) > 0:
+                    p = Participant.objects.filter(email=email)[0]
+
+                    for act_title in participant['activity_titles']:
+                        act = Activity.objects.filter(title=act_title)[0]
+                        ActivityRegistration.objects.create(
+                            activity=act,
+                            participant=p,
+                            pre_registered=True,
+                            showed_up=False
+                        )
+
+                    return redirect('participant_list')
+                
+                p = Participant.objects.create(
+                    name=name,
+                    email=email,
+                    internal_id=uuid.uuid4().hex[:7].upper() # unique id
                 )
-            
-        except:
-            print('Import went wrong')
+                
+                for act_title in participant['activity_titles']:
+                    act = Activity.objects.filter(title=act_title)[0]
+                    ActivityRegistration.objects.create(
+                        activity=act,
+                        participant=p,
+                        pre_registered=True,
+                        showed_up=False
+                    )
+                
+            except:
+                print('Import went wrong')
 
-    return redirect('participant_list')
+        return redirect('participant_list')
 
 
+# Validate pre-register
 class ActivityRegistrationListCreate(generics.ListCreateAPIView):
     queryset = ActivityRegistration.objects.all()
     serializer_class = ActivityRegistrationSerializer
@@ -341,17 +381,13 @@ class ActivityRegistrationListCreate(generics.ListCreateAPIView):
         act_title = request.POST['activity_title'].strip()
 
         try:
-            p = Participant.objects.filter(internal_id=internal_id)
+            p = Participant.objects.filter(internal_id=internal_id)[0]
             act = Activity.objects.filter(title=act_title)[0]
-            ActivityRegistration.objects.create(
-                activity=act,
-                participant=p,
-                pre_registered=False,
-                showed_up=True
-            )   
+            
+            ActivityRegistration.objects.filter(participant=p, activity=act)[0].update(showed_up=True)
             
         except:
-            print('Register went wrong')
+            print('Register validation went wrong')
 
         return redirect('activity_registration_list')
 
